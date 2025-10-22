@@ -4,13 +4,29 @@ const CANVAS_WIDTH = canvas.width = 600;
 const CANVAS_HEIGHT = canvas.height = 600;
 
 const playerImage = new Image();
-playerImage.src = '';
+playerImage.src = '/sprites/knight.png';
+const spriteWidth = 32;
+const spriteHeight = 32;
+let frameX = 0;
+let frameY = 0;
+let gameFrame = 0;
+
+const renderScale = 10;
 
 
 function animate() {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ctx.fillReact(100, 50, 100, 100);
-    ctx.drawImage(playerImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);  
+    //ctx.fillRect(100, 50, 100, 100);
+    //ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+    ctx.drawImage(playerImage, frameX * spriteWidth, 
+        frameY * spriteHeight, spriteWidth , spriteHeight, 0, 0,
+        spriteWidth * renderScale, spriteHeight * renderScale);  
+    if(gameFrame % 10 === 0){
+        if(frameX < 3) frameX++;
+        else frameX = 0;
+    }
+
+    gameFrame++;
     requestAnimationFrame(animate);
 }
 animate();
