@@ -1,4 +1,10 @@
 const canvas = document.getElementById('canvas1');
+const animationSelect = document.getElementById('animation');
+let currentAnimation = 'idle';
+
+animationSelect.addEventListener('change', function(e) {
+    currentAnimation = e.target.value;
+});
 const ctx = canvas.getContext('2d');
 const CANVAS_WIDTH = canvas.width = 600;
 const CANVAS_HEIGHT = canvas.height = 600;
@@ -59,7 +65,7 @@ console.log(spriteAnimations);
 
 function animate() {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    const animation = spriteAnimations['death'];
+    const animation = spriteAnimations[currentAnimation];
     let position = Math.floor(gameFrame / staggerFrames) % animation.loc.length;
     const frame = animation.loc[position];
     //ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
