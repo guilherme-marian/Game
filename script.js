@@ -2,6 +2,10 @@
 window.addEventListener('load', function() {
     const canvas = document.getElementById('canvas1');
     let currentAnimation = 'idle';
+    const ctx = canvas.getContext('2d');
+    const CANVAS_WIDTH = canvas.width = 576;
+    const CANVAS_HEIGHT = canvas.height = 324;
+    let gameFrame = 0;
     
     class InputHandler {
         constructor() {
@@ -12,22 +16,20 @@ window.addEventListener('load', function() {
                 if (this.validKeys.includes(e.key) && !this.keys.includes(e.key)) {
                     this.keys.push(e.key);
                 }
-                console.log(e.key, this.keys);
             });
             window.addEventListener('keyup', e => {
                 if (this.validKeys.includes(e.key) > -1) {
                     this.keys.splice(this.keys.indexOf(e.key), 1);
                 }
-                console.log(e.key, this.keys);
             });
         }
     }
 
     class Player {
         constructor(gameWidth, gameHeight) {
-            this.gameWidth = gameWidth;
-            this.gameHeight = gameHeight;
-            this.renderScale = -4;
+            this.gameWidth = CANVAS_WIDTH;
+            this.gameHeight = CANVAS_HEIGHT;
+            this.renderScale = -1.9;
             this.width = 32;
             this.height = 32;
             this.x = 0;
@@ -38,6 +40,8 @@ window.addEventListener('load', function() {
             this.maxFrame = 4;
             this.speed = 5;
             this.rollSpeed = 10;
+            this.isRolling = false;
+            this.rollTimer = 0;
             this.vy = 0;
             this.grav = 1;
             this.facingLeft = false;
@@ -50,7 +54,7 @@ window.addEventListener('load', function() {
             this.columns = 8;
             this.staggerFrames = 10;
             this.spriteAnimations = {};
-            this.currentAnimation = 'roll';
+            this.currentAnimation = 'idle';
             this.animationStates = [
                 {
                     name: 'idle',
@@ -97,34 +101,31 @@ window.addEventListener('load', function() {
 
                 this.spriteAnimations[state.name] = frames;
             });
-            console.log(this.spriteAnimations);
+
+            this.rollDuration = this.spriteAnimations['roll'].loc.length * this.staggerFrames;
         }
         draw(ctx, gameFrame) {
-            ctx.fillStyle = 'red';
-
             const animation = this.spriteAnimations[this.currentAnimation];
 
             let position = Math.floor(gameFrame / this.staggerFrames) % animation.loc.length;
             const frame = animation.loc[position];
 
-            ctx.fillRect(this.x, this.y, this.width * this.renderScale, this.height * this.renderScale);
-            
             ctx.save();
             if (this.facingLeft) {
                 ctx.translate(this.x, this.y);
                 ctx.scale(-1, 1);
                 ctx.drawImage(
                     this.image,
-                    frame.x, frame.y, this.width, this.height,
-                    0, 0,
+                    frame.x, frame.y, this.width, this.height - 4,
+                    0, 32,
                     this.width * Math.abs(this.renderScale),
                     this.height * this.renderScale
                 );
             }
             else {
                 ctx.drawImage(this.image,
-                frame.x, frame.y, this.width, this.height,
-                this.x, this.y, 
+                frame.x, frame.y, this.width, this.height - 4,
+                this.x, this.y + 32, 
                 this.width * this.renderScale, this.height * this.renderScale);
             }
             ctx.restore();
@@ -133,6 +134,19 @@ window.addEventListener('load', function() {
         }
         update(input) {
 
+            if(this.isRolling) {
+                this.rollTimer++;
+                this.currentAnimation = 'roll';
+                const rollStep = this.facingLeft ? -this.rollSpeed : this.rollSpeed;
+                this.x += rollStep;
+
+                if(this.rollTimer >= this.rollDuration) {
+                    this.isRolling = false;
+                    this.rollTimer = 0 / this.rollDuration;
+                    this.currentAnimation = 'idle';
+                }
+                return;
+            }
             if (input.keys.indexOf('ArrowRight') > -1) {
                 this.x += this.speed;
                 this.currentAnimation = 'run';
@@ -143,29 +157,39 @@ window.addEventListener('load', function() {
                 this.facingLeft = true;
             }
             else if (input.keys.indexOf('z') > -1 && this.OnGround()) {
-                this.vy -= 30;
-            } else if (input.keys.indexOf('x') > -1) {
-                this.x += this.rollSpeed;
+                this.vy -= 10;
+            } else if (input.keys.indexOf('x') > -1 && !this.isRolling && this.OnGround()) {
                 this.currentAnimation = 'roll';
+                this.isRolling = true;
+                this.rollTimer = 0;
             }
             else {
                 this.currentAnimation = 'idle';
             }
             //horizontal 
-            
-            if (this.x < 0) this.x = 0;
-            else if (this.x > this.gameWidth - this.width) this.x = this.gameWidth - this.width;
 
+            const drawWidth = this.width * Math.abs(this.renderScale);
+
+            if (this.facingLeft) {
+                if (this.x < drawWidth) this.x = drawWidth;
+                else if (this.x > this.gameWidth) this.x = this.gameWidth;
+            } else {
+                if (this.x < 0) this.x = 0;
+                else if (this.x > this.gameWidth - this.renderScale) this.x = this.gameWidth - this.renderScale;
+            }
             //vertical  
             this.y += this.vy;
 
             if (!this.OnGround()) {
                 this.vy += this.grav;
-                this.currentAnimation = 'jump';
+                if (this.currentAnimation !== 'roll')
+                {
+                    this.currentAnimation = 'jump';
+                }
             } else {
                 this.vy = 0;
                 this.y = this.gameHeight - this.height;
-                this.currentAnimation = 'idle';
+                
             }
             if (this.y > this.gameHeight - this.height) this.y = this.gameHeight - this.height;
         }
@@ -173,69 +197,30 @@ window.addEventListener('load', function() {
             return this.y >= this.gameHeight - this.height;
         }
     }
-
-    const ctx = canvas.getContext('2d');
-    const CANVAS_WIDTH = canvas.width = 600;
-    const CANVAS_HEIGHT = canvas.height = 600;
+    
+    class Background {
+        constructor(gameWidth, gameHeight) {
+            this.gameWidth = gameWidth;
+            this.gameHeight = gameHeight;
+            this.image = document.getElementById('backgroundImage');
+            this.clouds = document.getElementById('cloudsImage');
+            this.x = 0;
+            this.y = 0;
+            this.width = 576;
+            this.height = 324;
+            this.speed = 5;
+        }
+        draw(ctx) {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            ctx.drawImage(this.image, this.x + this.width - this.speed, this.y, this.width, this.height);
+            ctx.drawImage(this.clouds, this.x, this.y, this.width, this.height);
+            ctx.drawImage(this.clouds, this.x + this.width - this.speed , this.y, this.width, this.height);
+        }
+    }
 
     const playerImage = new Image();
-    playerImage.src = '/sprites/knight.png';
-    const spriteWidth = 32;
-    const spriteHeight = 32;
-    let frameX = 0;
-    let frameY = 0;
-    let gameFrame = 0;
-    const columns = 8;
-    const renderScale = 10;
-    const staggerFrames = 10;
-    const spriteAnimations = [];
-    const animationStates = [
-        {
-            name: 'idle',
-            frames: 4,
-            row: 0
-        },
-        {
-            name: 'jump',
-            frames: 1,
-            row: 2
-        },
-        {
-            name: 'run',
-            frames: 16,
-            row: 2
-        },
-        {
-            name: 'roll',
-            frames: 8,
-            row: 5
-        },
-        {
-            name: 'hit',
-            frames: 4,
-            row: 6
-        },
-        {
-            name: 'death',
-            frames: 4,
-            row: 7
-        }
-    ];
-
-    animationStates.forEach((state) => {
-        let frames = {
-            loc: []
-        };
-
-        for (let j = 0; j < state.frames; j++) {
-            let positionX = (j % columns) * spriteWidth;
-            let positionY = (state.row + Math.floor(j / columns)) * spriteHeight;
-            frames.loc.push({ x: positionX, y: positionY });
-        }
-
-        spriteAnimations[state.name] = frames;
-    });
-    console.log(spriteAnimations);
+    playerImage.src = '/sprites/character/knight.png';
+    const backgroundImage = new Background(CANVAS_WIDTH, CANVAS_HEIGHT);
 
     const input = new InputHandler();
     const player = new Player(CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -245,31 +230,14 @@ window.addEventListener('load', function() {
 
     function animate() {
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        const animation = spriteAnimations[currentAnimation];
-        let position = Math.floor(gameFrame / staggerFrames) % animation.loc.length;
-        //ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
-        ctx.fillStyle = 'white';
-        ctx.fillRect(animation.loc[position].x, animation.loc[position].y,
-        spriteWidth * renderScale, spriteHeight * renderScale);
-        ctx.drawImage(playerImage, animation.loc[position].x, animation.loc[position].y,
-            spriteWidth , spriteHeight, 0, 0, spriteWidth * renderScale,
-            spriteHeight * renderScale); 
-            
+            backgroundImage.draw(ctx);
             player.update(input);
             player.draw(ctx, gameFrame);
 
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         gameFrame++;
         requestAnimationFrame(animate);
     }
     animate();
 });
-
-var rect1= {x: 50, y: 50, width: 100, height: 100};
-var rect2= {x: 200, y: 200, width: 100, height: 100};
-
-if (rect1.x > rect2.x + rect2.width ||
-    rect1.x + rect1.width < rect2.x ||
-    rect1.y > rect2.y + rect2.height ||
-    rect1.y + rect1.height < rect2.y) {
-    console.log("No collision detected!");
-}
