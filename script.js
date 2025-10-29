@@ -63,7 +63,7 @@ window.addEventListener('load', function() {
             this.columns = 8;
             this.staggerFrames = 10;
             this.spriteAnimations = {};
-            this.currentAnimation = 'idle';
+            this.currentAnimation = 'run';
             this.animationStates = [
                 {
                     name: 'idle',
@@ -148,7 +148,7 @@ window.addEventListener('load', function() {
         }
         update(input, plataforms) {
 
-            if(this.isRolling) {
+            if(this.isRolling && this.currentAnimation != 'death') {
                 this.rollTimer++;
                 this.currentAnimation = 'roll';
                 const rollStep = this.facingLeft ? -this.rollSpeed : this.rollSpeed;
@@ -165,23 +165,24 @@ window.addEventListener('load', function() {
                 this.jumpCooldown--;
             }
 
-            if (input.isPressed('ArrowRight')) {
+            if (input.isPressed('ArrowRight') && this.currentAnimation !='death') {
                 this.x += this.speed;
                 this.currentAnimation = 'run';
                 this.facingLeft = false;
-            } else if (input.isPressed('ArrowLeft')) {
+            } else if (input.isPressed('ArrowLeft') && this.currentAnimation != 'death') {
                 this.x -= this.speed;
                 this.currentAnimation = 'run';
                 this.facingLeft = true;
             }
-            if (input.isPressed('z') && this.OnGround(plataforms) && this.jumpCooldown === 0) {
+            if (input.isPressed('z') && this.OnGround(plataforms) && this.jumpCooldown === 0 && this.currentAnimation != 'death') {
                 this.vy -= 10;
                 this.jumpCooldown = this.jumpCooldownMax;
             }
             if(
                 input.isPressed('x') &&
                 !this.isRolling &&
-                (this.OnGround(plataforms) || this.checkPlataformCollision(plataforms))
+                (this.OnGround(plataforms) || this.checkPlataformCollision(plataforms) &&
+                this.currentAnimation != 'death')
             ) {
                 this.currentAnimation = 'roll';
                 this.isRolling = true;
@@ -197,16 +198,13 @@ window.addEventListener('load', function() {
             if (this.facingLeft) {
                 if (this.x < drawWidth) this.x = drawWidth;
                 else if (this.x > this.gameWidth) this.x = this.gameWidth;
-            } else {
-                if (this.x < 0) this.x = 0;
-                else if (this.x > this.gameWidth - this.renderScale) this.x = this.gameWidth - this.renderScale;
             }
             //vertical  
             this.y += this.vy;
 
             const landedOnPlatform = this.checkPlataformCollision(plataforms);
 
-            if (!this.OnGround() && !landedOnPlatform) {
+            if (!this.OnGround() && !landedOnPlatform && this.currentAnimation != 'death') {
                 this.vy += this.grav;
                 if (this.currentAnimation !== 'roll') {
                     this.currentAnimation = 'jump';
@@ -251,7 +249,7 @@ window.addEventListener('load', function() {
                 const withinX = playerX + playerWidth >= plataform.x &&
                                 playerX <= plataform.x + plataform.width;
 
-                if (onTop && withinX) {
+                if (onTop && withinX && this.currentAnimation != 'death') {
                     this.y = plataform.y - this.height - this.collisionOffsetY;
                     return true;
                 }
@@ -260,7 +258,7 @@ window.addEventListener('load', function() {
         }
         getCollisionBox() {
             const drawWidth = this.width * Math.abs(this.renderScale);
-            const shrinkAmount = 1;
+            const shrinkAmount = 3;
             if (this.facingLeft) {
                 return {
                     x: this.x - drawWidth + shrinkAmount,
@@ -285,6 +283,7 @@ function resetLevel() {
             player.vy = 0;
             gameFrame = 0;
             player.currentAnimation = 'idle';
+            currentLevel = 0;
         }
     class Plataform {
         constructor(x, y, gameWidth, gameHeight, currentAnimation) {
@@ -303,6 +302,12 @@ function resetLevel() {
             this.spriteAnimations = {};
             this.currentAnimation = currentAnimation;
             this.animationStates = [
+                {
+                    name: 'invisible',
+                    frames: 1,
+                    row: 0,
+                    column: 3
+                },
                 { 
                     name: 'short_green',
                     frames: 1, 
@@ -376,7 +381,7 @@ function resetLevel() {
             let position = Math.floor(gameFrame / this.staggerFrames) % animation.loc.length;
             const frame = animation.loc[position];
             ctx.strokeStyle = 'black';
-            ctx.strokeRect(this.x, this.y - 32, frame.width, this.height);
+            //ctx.strokeRect(this.x, this.y - 32, frame.width, this.height);
 
             ctx.drawImage(
                 this.image,
@@ -396,55 +401,80 @@ function resetLevel() {
             this.renderScale = 1;
 
             const tileStates = [
-                // Row 0 – Blocks
-                { name: 'brick_block', row: 0, column: 0, width: 1, height: 1 },
-                { name: 'brick_dirtBlock', row: 0, column: 1, width: 1, height: 1 },
-                { name: 'solid_block_gray', row: 0, column: 2, width: 1, height: 1 },
-                { name: 'solid_block_blue', row: 0, column: 3, width: 1, height: 1 },
+                
+                { name: 'solid_block_brown', row: 0, column: 0, width: 1, height: 1 },
+                { name: 'solid_block_yellow', row: 0, column: 2, width: 1, height: 1 },
+                { name: 'solid_block_gray', row: 0, column: 4, width: 1, height: 1 },
+                { name: 'solid_block_blue', row: 0, column: 6, width: 1, height: 1 },
 
-                // Row 1 – Coins and collectibles
-                { name: 'coin_gold', row: 1, column: 0, width: 1, height: 1 },
-                { name: 'coin_blue', row: 1, column: 1, width: 1, height: 1 },
-                { name: 'coin_red', row: 1, column: 2, width: 1, height: 1 },
-                { name: 'coin_green', row: 1, column: 3, width: 1, height: 1 },
+                { name: 'solid_dirt_brown', row: 1, column: 0, width: 1, height: 1 },
+                { name: 'solid_dirt_yellow', row: 1, column: 2, width: 1, height: 1 },
+                { name: 'solid_dirt_gray', row: 1, column: 4, width: 1, height: 1 },
+                { name: 'solid_dirt_blue', row: 1, column: 6, width: 1, height: 1 },
 
-                // Row 2 – Pipes
-                { name: 'pipe_green', row: 3, column: 0, width: 1, height: 3 },
-                { name: 'pipe_yellow', row: 3, column: 5, width: 1, height: 3 },
-                { name: 'pipe_red_bottom', row: 4, column: 1, width: 1, height: 1 },
+                { name: 'question_green', row: 2, column: 0, width: 1, height: 1 },
+                { name: 'question_brown', row: 2, column: 3, width: 1, height: 1 },
+                { name: 'question_red', row: 2, column: 4, width: 1, height: 1 },
+                { name: 'question_blue', row: 2, column: 7, width: 1, height: 1 },
 
-                // Row 3 – Doors and ladders
-                { name: 'door_wood', row: 3, column: 0, width: 1, height: 2 },
-                { name: 'door_stone', row: 3, column: 1, width: 1, height: 2 },
-                { name: 'ladder_vertical', row: 3, column: 2, width: 1, height: 3 },
+                { name: 'tree_green', row: 3, column: 0, width: 1, height: 3 },
+                { name: 'tree_yellow', row: 3, column: 5, width: 1, height: 3 },
+                { name: 'tree_blue', row: 3, column: 6, width: 1, height: 3 },
 
-                // Row 4 – Vegetation
-                { name: 'palm_tree_top', row: 4, column: 3, width: 1, height: 1 },
-                { name: 'palm_tree_middle', row: 5, column: 3, width: 1, height: 1 },
-                { name: 'palm_tree_base', row: 6, column: 3, width: 1, height: 1 },
-                { name: 'bush_green', row: 4, column: 4, width: 1, height: 1 },
+                
+                { name: 'sign_wood', row: 3, column: 8, width: 1, height: 1 },
+                { name: 'sign_red', row: 4, column: 8, width: 1, height: 1 },
+                { name: 'ladder_wood', row: 3, column: 9, width: 1, height: 1 },
+                { name: 'ladder_red', row: 4, column: 9, width: 1, height: 1},
+                { name: 'box_wood', row: 3, column: 7, width: 1, height: 1},
+                { name: 'box_red', row: 4, column: 7, width: 1, height: 1},
+                
+                { name: 'palm_tree_top', row: 4, column: 2, width: 3, height: 3 },
+                { name: 'palm_tree_base', row: 7, column: 3, width: 1, height: 2 },
 
-                // Row 5 – Mushrooms and vases
+                { name: 'tall_bush_green', row: 3, column: 1, width: 1, height: 1 },
+                { name: 'normal_bush_green', row: 4, column: 1, width: 1, height: 1 },
+                { name: 'short_bush_green', row: 5, column: 1, width: 1, height: 1 },
+                { name: 'flower_bush_green', row: 6, column: 1, width: 1, height: 1 },
+                { name: 'tall_bush_yellow', row: 6, column: 5, width: 1, height: 1 },
+                { name: 'normal_bush_yellow', row: 7, column: 5, width: 1, height: 1 },
+                { name: 'short_bush_yellow', row: 8, column: 5, width: 1, height: 1 },
+                { name: 'pumpkin', row: 8, column: 4, width: 1, height: 1 },
+                { name: 'tall_bush_blue', row: 6, column: 6, width: 1, height: 1 },
+                { name: 'normal_bush_blue', row: 7, column: 6, width: 1, height: 1 },
+                { name: 'short_bush_blue', row: 8, column: 6, width: 1, height: 1 },
+
                 { name: 'mushroom_red', row: 5, column: 0, width: 1, height: 1 },
                 { name: 'mushroom_blue', row: 5, column: 1, width: 1, height: 1 },
                 { name: 'vase_purple', row: 5, column: 2, width: 1, height: 1 },
                 { name: 'vase_green', row: 5, column: 4, width: 1, height: 1 },
 
-                // Row 6 – Waterfalls
-                { name: 'waterfall_blue_top', row: 6, column: 0, width: 1, height: 1 },
-                { name: 'waterfall_blue_middle', row: 7, column: 0, width: 1, height: 1 },
-                { name: 'waterfall_blue_bottom', row: 8, column: 0, width: 1, height: 1 },
-                { name: 'waterfall_pink_top', row: 6, column: 1, width: 1, height: 1 },
-                { name: 'waterfall_pink_middle', row: 7, column: 1, width: 1, height: 1 },
-                { name: 'waterfall_pink_bottom', row: 8, column: 1, width: 1, height: 1 },
+                { name: 'waterfall_blue_top', row: 9, column: 0, width: 1, height: 2 },
+                { name: 'waterfall_blue_middleUp', row: 11, column: 0, width: 1, height: 2 },
+                { name: 'waterfall_blue_middleDown', row: 13, column: 0, width: 1, height: 2 },
+                { name: 'waterfall_blue_down', row: 15, column: 0, width: 1, height: 1 },
+                { name: 'waterfall_yellow_top', row: 9, column: 1, width: 1, height: 2 },
+                { name: 'waterfall_yellow_middleUp', row: 11, column: 1, width: 1, height: 2 },
+                { name: 'waterfall_yellow_middleDown', row: 13, column: 1, width: 1, height: 2 },
+                { name: 'waterfall_yellow_down', row: 15, column: 1, width: 1, height: 1 },
+                { name: 'waterfall_pink_top', row: 9, column: 2, width: 1, height: 2 },
+                { name: 'waterfall_pink_middleUp', row: 11, column: 2, width: 1, height: 2 },
+                { name: 'waterfall_pink_middleDown', row: 13, column: 2, width: 1, height: 2 },
+                { name: 'waterfall_pink_down', row: 15, column: 2, width: 1, height: 1 },
+                { name: 'waterfall_grey_top', row: 9, column: 3, width: 1, height: 2 },
+                { name: 'waterfall_grey_middleUp', row: 11, column: 3, width: 1, height: 2 },
+                { name: 'waterfall_grey_middleDown', row: 13, column: 3, width: 1, height: 2 },
+                { name: 'waterfall_grey_down', row: 15, column: 3, width: 1, height: 1 },
 
-                // Row 9 – Cat tiles
-                { name: 'cat_tile_red', row: 9, column: 0, width: 1, height: 1 },
-                { name: 'cat_tile_blue', row: 9, column: 1, width: 1, height: 1 },
-                { name: 'cat_tile_pink', row: 9, column: 2, width: 1, height: 1 },
-                { name: 'cat_tile_white', row: 9, column: 3, width: 1, height: 1 },
-                { name: 'cat_tile_purple', row: 9, column: 4, width: 1, height: 1 },
-                { name: 'cat_tile_yellow', row: 9, column: 5, width: 1, height: 1 }
+                { name: 'tall_water_blue', row: 9, column: 4, width: 1, height: 2 },
+                { name: 'tall_water_pink', row: 11, column: 4, width: 1, height: 2 },
+                { name: 'tall_water_yellow', row: 13, column: 4, width: 1, height: 2 },
+                { name: 'tall_water_grey', row: 9, column: 6, width: 1, height: 2 },
+
+                { name: 'short_water_blue', row: 9, column: 5, width: 1, height: 1 },
+                { name: 'short_water_pink', row: 11, column: 5, width: 1, height: 1 },
+                { name: 'short_water_yellow', row: 13, column: 5, width: 1, height: 1 },
+                { name: 'short_water_grey', row: 9, column: 7, width: 1, height: 1 },
                 ];
 
             for (let row = 0; row < 16; row++) {
@@ -483,11 +513,11 @@ function resetLevel() {
 
 
     class Background {
-        constructor(gameWidth, gameHeight) {
+        constructor(gameWidth, gameHeight, image, clouds) {
             this.gameWidth = gameWidth;
             this.gameHeight = gameHeight;
-            this.image = document.getElementById('backgroundImage');
-            this.clouds = document.getElementById('cloudsImage');
+            this.image = image
+            this.clouds = clouds
             this.x = 0;
             this.y = 0;
             this.width = 576;
@@ -504,7 +534,6 @@ function resetLevel() {
 
     const playerImage = new Image();
     playerImage.src = './sprites/character/knight.png';
-    const backgroundImage = new Background(CANVAS_WIDTH, CANVAS_HEIGHT);
 
 
     const tilesetSrc = new Image();
@@ -512,34 +541,353 @@ function resetLevel() {
 
     const input = new InputHandler();
     const player = new Player(CANVAS_WIDTH, CANVAS_HEIGHT);   
-    const tiles = [
-        new Tile(tilesetSrc, 50, 220, 'pipe_green'),
-        new Tile(tilesetSrc, 0, 220, 'pipe_yellow')
-    ];
 
-
-    playerImage.onload = () => console.log('player loaded');
-    tilesetSrc.onload = () => console.log('tile Loaded')
-
-    const plataforms = [
-        new Plataform(0, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
-        new Plataform(32, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
-        new Plataform(64, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-        new Plataform(96, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
-        new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
-        new Plataform(200, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-        new Plataform(250, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
-        new Plataform(300, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
-        new Plataform(350, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-        new Plataform(400, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
-        new Plataform(450, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_green'),
-        new Plataform(500, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
-        new Plataform(500, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue')
+    const levels = [
+        {
+            background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
+                document.getElementById('backgroundBlue'),
+                document.getElementById('cloudsBlue')
+            ),
+            tiles: [
+            new Tile(tilesetSrc, 98, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 520, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 50, 252, 'tree_green'),
+            new Tile(tilesetSrc, 0, 252, 'tree_green'),
+            new Tile(tilesetSrc, 80, 284, 'tall_bush_green'),
+            new Tile(tilesetSrc, 96, 284, 'normal_bush_green'),
+            new Tile(tilesetSrc, 64, 284, 'short_bush_green'),
+            new Tile(tilesetSrc, 32, 284, 'flower_bush_green'),
+            new Tile(tilesetSrc, 0, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 16, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 32, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 48, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 64, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 80, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 96, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 560, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 544, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 528, 300, 'solid_block_brown'),
+            new Tile(tilesetSrc, 0, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 16, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 32, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 48, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 64, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 80, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 96, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 560, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 544, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 528, 316, 'solid_dirt_brown'),
+            new Tile(tilesetSrc, 512, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 498, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 482, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 466, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 450, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 434, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 418, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 402, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 386, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 370, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 354, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 338, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 322, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 306, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 290, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 274, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 258, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 242, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 226, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 210, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 194, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 178, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 162, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 146, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 130, 300, 'tall_water_blue'),
+            new Tile(tilesetSrc, 114, 300, 'tall_water_blue')
+            ],
+            plataforms: [
+            new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(200, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(250, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(300, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(350, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(400, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(450, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_green'),
+            new Plataform(500, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_green'),
+            new Plataform(500, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
+            new Plataform(0, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(16, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(32, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(48, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(64, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(80, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(96, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(560, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(544, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(528, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible')
+            ]   
+        },
+        {
+            background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
+                document.getElementById('backgroundYellow'),
+                document.getElementById('cloudsYellow')
+            ),
+            tiles: [
+            new Tile(tilesetSrc, 98, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 520, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 50, 252, 'tree_yellow'),
+            new Tile(tilesetSrc, 0, 252, 'tree_yellow'),
+            new Tile(tilesetSrc, 80, 284, 'tall_bush_yellow'),
+            new Tile(tilesetSrc, 96, 284, 'normal_bush_yellow'),
+            new Tile(tilesetSrc, 64, 284, 'short_bush_yellow'),
+            new Tile(tilesetSrc, 32, 284, 'pumpkin'),
+            new Tile(tilesetSrc, 0, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 16, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 32, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 48, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 64, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 80, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 96, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 560, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 544, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 528, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 0, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 16, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 32, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 48, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 64, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 80, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 96, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 560, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 544, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 528, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 512, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 498, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 482, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 466, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 450, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 434, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 418, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 402, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 386, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 370, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 354, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 338, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 322, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 306, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 290, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 274, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 258, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 242, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 226, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 210, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 194, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 178, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 162, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 146, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 130, 300, 'tall_water_pink'),
+            new Tile(tilesetSrc, 114, 300, 'tall_water_pink')
+            ],
+            plataforms: [
+            new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(200, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(250, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(300, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(350, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(400, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(450, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(500, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(500, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(0, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(16, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(32, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(48, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(64, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(80, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(96, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(560, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(544, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(528, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible')
+            ]   
+        },
+        {
+            background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
+                document.getElementById('backgroundImage'),
+                document.getElementById('cloudsImage')
+            ),
+            tiles: [
+            new Tile(tilesetSrc, 98, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 520, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 50, 252, 'tree_green'),
+            new Tile(tilesetSrc, 0, 252, 'tree_green'),
+            new Tile(tilesetSrc, 80, 284, 'tall_bush_green'),
+            new Tile(tilesetSrc, 96, 284, 'normal_bush_green'),
+            new Tile(tilesetSrc, 64, 284, 'short_bush_green'),
+            new Tile(tilesetSrc, 32, 284, 'flower_bush_green'),
+            new Tile(tilesetSrc, 0, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 16, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 32, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 48, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 64, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 80, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 96, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 560, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 544, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 528, 300, 'solid_block_gray'),
+            new Tile(tilesetSrc, 0, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 16, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 32, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 48, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 64, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 80, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 96, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 560, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 544, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 528, 316, 'solid_dirt_gray'),
+            new Tile(tilesetSrc, 512, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 498, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 482, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 466, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 450, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 434, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 418, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 402, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 386, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 370, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 354, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 338, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 322, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 306, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 290, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 274, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 258, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 242, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 226, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 210, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 194, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 178, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 162, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 146, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 130, 300, 'tall_water_yellow'),
+            new Tile(tilesetSrc, 114, 300, 'tall_water_yellow')
+            ],
+            plataforms: [
+            new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(200, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(250, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(300, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(350, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(400, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(450, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_brown'),
+            new Plataform(500, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_brown'),
+            new Plataform(500, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_brown'),
+            new Plataform(0, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(16, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(32, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(48, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(64, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(80, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(96, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(560, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(544, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(528, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible')
+            ]   
+        },
+        {
+            background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
+                document.getElementById('backgroundNight'),
+                document.getElementById('cloudsNight')
+            ),
+            tiles: [
+            new Tile(tilesetSrc, 98, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 520, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 50, 252, 'tree_blue'),
+            new Tile(tilesetSrc, 0, 252, 'tree_blue'),
+            new Tile(tilesetSrc, 80, 284, 'tall_bush_blue'),
+            new Tile(tilesetSrc, 96, 284, 'normal_bush_blue'),
+            new Tile(tilesetSrc, 64, 284, 'short_bush_blue'),
+            new Tile(tilesetSrc, 0, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 16, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 32, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 48, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 64, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 80, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 96, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 560, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 544, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 528, 300, 'solid_block_blue'),
+            new Tile(tilesetSrc, 0, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 16, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 32, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 48, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 64, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 80, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 96, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 560, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 544, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 528, 316, 'solid_dirt_blue'),
+            new Tile(tilesetSrc, 512, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 498, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 482, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 466, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 450, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 434, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 418, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 402, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 386, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 370, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 354, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 338, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 322, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 306, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 290, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 274, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 258, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 242, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 226, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 210, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 194, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 178, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 162, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 146, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 130, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 114, 300, 'tall_water_grey'),
+            new Tile(tilesetSrc, 544, 284, 'sign_wood')
+            ],
+            plataforms: [
+            new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(200, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(250, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(300, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(350, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(400, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(450, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_blue'),
+            new Plataform(500, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_blue'),
+            new Plataform(500, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
+            new Plataform(0, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(16, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(32, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(48, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(64, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(80, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(96, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(560, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(544, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(528, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible')
+            ]   
+        },
     ]
+    
+    
+
+    let currentLevel = 3;
+    let background = levels[currentLevel].background;
+    let tiles = levels[currentLevel].tiles;
+    let plataforms = levels[currentLevel].plataforms;
+
     player.update(input, plataforms);
     function animate() {
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            backgroundImage.draw(ctx);
+            background.draw(ctx);
             tiles.forEach(tile => {
                 tile.draw(ctx);
             });
@@ -549,6 +897,18 @@ function resetLevel() {
                 plataform.draw(ctx, gameFrame);
             });
             player.update(input, plataforms);
+
+            if(player.x > CANVAS_WIDTH) {
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                    background = levels[currentLevel].background;
+                    tiles = levels[currentLevel].tiles;
+                    plataforms = levels[currentLevel].plataforms;
+                    player.x = 0;
+                } else {
+                    console.log("You finished the game!");
+                }
+            }
         ctx.strokeStyle = 'white';
         ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         gameFrame++;
