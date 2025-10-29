@@ -39,7 +39,7 @@ window.addEventListener('load', function() {
             this.width = 32;
             this.height = 32;
             this.x = 32;
-            this.y = 0;
+            this.y = 250;
             this.image = document.getElementById('playerImage');
             this.frameX = 0;
             this.frameY = 0;
@@ -54,6 +54,8 @@ window.addEventListener('load', function() {
             this.collisionOffsetY = 32;
             this.jumpCooldown = 0;
             this.jumpCooldownMax = 10;
+            this.rollCooldown = 0;
+            this.rollCooldownMax = 100;
 
             if(this.facingLeft) {
                 this.rollSpeed = -10;
@@ -164,6 +166,9 @@ window.addEventListener('load', function() {
             if (this.jumpCooldown > 0) {
                 this.jumpCooldown--;
             }
+            if(this.rollCooldown > 0) {
+                this.rollCooldown--;
+            }
 
             if (input.isPressed('ArrowRight') && this.currentAnimation !='death') {
                 this.x += this.speed;
@@ -181,17 +186,19 @@ window.addEventListener('load', function() {
             if(
                 input.isPressed('x') &&
                 !this.isRolling &&
-                (this.OnGround(plataforms) || this.checkPlataformCollision(plataforms) &&
-                this.currentAnimation != 'death')
+                (this.OnGround(plataforms) &&
+                this.rollCooldown === 0 || this.checkPlataformCollision(plataforms) &&
+                this.rollCooldown === 0 &&
+                this.currentAnimation != 'death' )
             ) {
                 this.currentAnimation = 'roll';
                 this.isRolling = true;
                 this.rollTimer = 50;
+                this.rollCooldown = this.rollCooldownMax;
             }
             else {
                 this.currentAnimation = 'idle';
             }
-            //horizontal 
 
             const drawWidth = this.width * Math.abs(this.renderScale);
 
@@ -199,7 +206,7 @@ window.addEventListener('load', function() {
                 if (this.x < drawWidth) this.x = drawWidth;
                 else if (this.x > this.gameWidth) this.x = this.gameWidth;
             }
-            //vertical  
+
             this.y += this.vy;
 
             const landedOnPlatform = this.checkPlataformCollision(plataforms);
@@ -231,7 +238,6 @@ window.addEventListener('load', function() {
         }
         OnGround(plataforms) {
             const plataform = this.checkPlataformCollision(plataforms);
-            const playerBottom = this.y + this.height + this.collisionOffsetY;
             return (plataform && this.vy >= 0);
         }
         checkPlataformCollision(plataforms) {
@@ -274,12 +280,11 @@ window.addEventListener('load', function() {
         Death() {
             return this.gameHeight - this.height;
         }
-        
 
     }
 function resetLevel() {
             player.x = 32;
-            player.y = 0;
+            player.y = 250;
             player.vy = 0;
             gameFrame = 0;
             player.currentAnimation = 'idle';
@@ -305,7 +310,7 @@ function resetLevel() {
                     name: 'invisible',
                     frames: 1,
                     row: 0,
-                    column: 3
+                    column: 3,
                 },
                 { 
                     name: 'short_green',
@@ -380,7 +385,7 @@ function resetLevel() {
             let position = Math.floor(gameFrame / this.staggerFrames) % animation.loc.length;
             const frame = animation.loc[position];
             ctx.strokeStyle = 'black';
-            //ctx.strokeRect(this.x, this.y - 32, frame.width, this.height);
+            ctx.strokeRect(this.x, this.y - 32, frame.width, this.height);
 
             ctx.drawImage(
                 this.image,
@@ -427,6 +432,10 @@ function resetLevel() {
                 { name: 'ladder_red', row: 4, column: 9, width: 1, height: 1},
                 { name: 'box_wood', row: 3, column: 7, width: 1, height: 1},
                 { name: 'box_red', row: 4, column: 7, width: 1, height: 1},
+
+                { name: 'bridge_brown', row: 0, column: 9, width: 3, height: 1},
+                { name: 'bridge_yellow', row: 1, column: 9, width: 3, height: 1},
+                { name: 'bridge_red', row: 2, column: 9, width: 3, height: 1},
                 
                 { name: 'palm_tree_top', row: 4, column: 2, width: 3, height: 3 },
                 { name: 'palm_tree_base', row: 7, column: 3, width: 1, height: 2 },
@@ -501,7 +510,7 @@ function resetLevel() {
 
        draw(ctx) {
         const frame = this.spriteAnimations[this.currentAnimation];
-
+        
         ctx.drawImage(
                 this.image,
                 frame.x, frame.y, frame.width, frame.height,
@@ -646,6 +655,11 @@ function resetLevel() {
             new Tile(tilesetSrc, 64, 300, 'solid_block_yellow'),
             new Tile(tilesetSrc, 80, 300, 'solid_block_yellow'),
             new Tile(tilesetSrc, 96, 300, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 0, 128, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 16, 128, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 32, 128, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 48, 128, 'solid_block_yellow'),
+            new Tile(tilesetSrc, 64, 128, 'solid_block_yellow'),
             new Tile(tilesetSrc, 560, 300, 'solid_block_yellow'),
             new Tile(tilesetSrc, 544, 300, 'solid_block_yellow'),
             new Tile(tilesetSrc, 528, 300, 'solid_block_yellow'),
@@ -659,6 +673,7 @@ function resetLevel() {
             new Tile(tilesetSrc, 560, 316, 'solid_dirt_yellow'),
             new Tile(tilesetSrc, 544, 316, 'solid_dirt_yellow'),
             new Tile(tilesetSrc, 528, 316, 'solid_dirt_yellow'),
+            new Tile(tilesetSrc, 80, 128, 'bridge_brown'),
             new Tile(tilesetSrc, 512, 300, 'tall_water_pink'),
             new Tile(tilesetSrc, 498, 300, 'tall_water_pink'),
             new Tile(tilesetSrc, 482, 300, 'tall_water_pink'),
@@ -687,15 +702,31 @@ function resetLevel() {
             new Tile(tilesetSrc, 114, 300, 'tall_water_pink')
             ],
             plataforms: [
-            new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-            new Plataform(200, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(128, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(248, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
             new Plataform(250, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
             new Plataform(300, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-            new Plataform(350, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-            new Plataform(400, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
-            new Plataform(450, 200, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
-            new Plataform(500, 250, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
-            new Plataform(500, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+            new Plataform(250, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(128, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(0, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(16, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(32, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(48, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(64, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(80, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(96, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+            new Plataform(112, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
+
+            new Plataform(64, 112, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(64, 80, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+            new Plataform(176, 80, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+
+            new Plataform(240, 80, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+
+            new Plataform(352, 80, CANVAS_WIDTH, CANVAS_HEIGHT, 'short_yellow'),
+
+            new Plataform(474, 160, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_yellow'),
+
             new Plataform(0, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
             new Plataform(16, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
             new Plataform(32, 332, CANVAS_WIDTH, CANVAS_HEIGHT, 'invisible'),
@@ -716,12 +747,6 @@ function resetLevel() {
             tiles: [
             new Tile(tilesetSrc, 98, 300, 'tall_water_yellow'),
             new Tile(tilesetSrc, 520, 300, 'tall_water_yellow'),
-            new Tile(tilesetSrc, 50, 252, 'tree_green'),
-            new Tile(tilesetSrc, 0, 252, 'tree_green'),
-            new Tile(tilesetSrc, 80, 284, 'tall_bush_green'),
-            new Tile(tilesetSrc, 96, 284, 'normal_bush_green'),
-            new Tile(tilesetSrc, 64, 284, 'short_bush_green'),
-            new Tile(tilesetSrc, 32, 284, 'flower_bush_green'),
             new Tile(tilesetSrc, 0, 300, 'solid_block_gray'),
             new Tile(tilesetSrc, 16, 300, 'solid_block_gray'),
             new Tile(tilesetSrc, 32, 300, 'solid_block_gray'),
@@ -884,6 +909,7 @@ function resetLevel() {
     let plataforms = levels[currentLevel].plataforms;
 
     player.update(input, plataforms);
+
     function animate() {
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             background.draw(ctx);
