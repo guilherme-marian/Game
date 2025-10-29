@@ -551,5 +551,9 @@ function resetLevel() {
         gameFrame++;
         requestAnimationFrame(animate);
     }
-    animate();
+    tilesetSrc.onload = () => {
+        playerImage.onload = () => {
+            animate();
+        }
+    }
 });
