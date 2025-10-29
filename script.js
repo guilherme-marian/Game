@@ -283,7 +283,6 @@ function resetLevel() {
             player.vy = 0;
             gameFrame = 0;
             player.currentAnimation = 'idle';
-            currentLevel = 0;
         }
     class Plataform {
         constructor(x, y, gameWidth, gameHeight, currentAnimation) {
