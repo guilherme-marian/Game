@@ -6,8 +6,8 @@ window.addEventListener('load', function() {
     const CANVAS_WIDTH = canvas.width = 576;
     const CANVAS_HEIGHT = canvas.height = 324;
     let gameFrame = 0;
-    const TILE_WIDTH = 32;
-    const TILE_HEIGHT = 32;
+    const TILE_WIDTH = 16;
+    const TILE_HEIGHT = 16;
 
     
     class InputHandler {
@@ -387,21 +387,96 @@ function resetLevel() {
     }
 
     class Tile {
-        constructor(image, tileX, tileY, x, y, width = TILE_WIDTH, height = TILE_HEIGHT) {
-            this.image = image;       // Sprite sheet
-            this.tileX = tileX;       // Column in tileset
-            this.tileY = tileY;       // Row in tileset
-            this.x = x;               // Position on canvas
+        constructor(image, x, y, currentAnimation, width = TILE_WIDTH, height = TILE_HEIGHT) {
+            this.image = image;           
+            this.x = x;               
             this.y = y;
             this.width = width;
             this.height = height;
+            this.renderScale = 1;
+
+            const tileStates = [
+                // Row 0 – Blocks
+                { name: 'brick_block', row: 0, column: 0, width: 1, height: 1 },
+                { name: 'brick_dirtBlock', row: 0, column: 1, width: 1, height: 1 },
+                { name: 'solid_block_gray', row: 0, column: 2, width: 1, height: 1 },
+                { name: 'solid_block_blue', row: 0, column: 3, width: 1, height: 1 },
+
+                // Row 1 – Coins and collectibles
+                { name: 'coin_gold', row: 1, column: 0, width: 1, height: 1 },
+                { name: 'coin_blue', row: 1, column: 1, width: 1, height: 1 },
+                { name: 'coin_red', row: 1, column: 2, width: 1, height: 1 },
+                { name: 'coin_green', row: 1, column: 3, width: 1, height: 1 },
+
+                // Row 2 – Pipes
+                { name: 'pipe_green', row: 3, column: 0, width: 1, height: 3 },
+                { name: 'pipe_yellow', row: 3, column: 5, width: 1, height: 3 },
+                { name: 'pipe_red_bottom', row: 4, column: 1, width: 1, height: 1 },
+
+                // Row 3 – Doors and ladders
+                { name: 'door_wood', row: 3, column: 0, width: 1, height: 2 },
+                { name: 'door_stone', row: 3, column: 1, width: 1, height: 2 },
+                { name: 'ladder_vertical', row: 3, column: 2, width: 1, height: 3 },
+
+                // Row 4 – Vegetation
+                { name: 'palm_tree_top', row: 4, column: 3, width: 1, height: 1 },
+                { name: 'palm_tree_middle', row: 5, column: 3, width: 1, height: 1 },
+                { name: 'palm_tree_base', row: 6, column: 3, width: 1, height: 1 },
+                { name: 'bush_green', row: 4, column: 4, width: 1, height: 1 },
+
+                // Row 5 – Mushrooms and vases
+                { name: 'mushroom_red', row: 5, column: 0, width: 1, height: 1 },
+                { name: 'mushroom_blue', row: 5, column: 1, width: 1, height: 1 },
+                { name: 'vase_purple', row: 5, column: 2, width: 1, height: 1 },
+                { name: 'vase_green', row: 5, column: 4, width: 1, height: 1 },
+
+                // Row 6 – Waterfalls
+                { name: 'waterfall_blue_top', row: 6, column: 0, width: 1, height: 1 },
+                { name: 'waterfall_blue_middle', row: 7, column: 0, width: 1, height: 1 },
+                { name: 'waterfall_blue_bottom', row: 8, column: 0, width: 1, height: 1 },
+                { name: 'waterfall_pink_top', row: 6, column: 1, width: 1, height: 1 },
+                { name: 'waterfall_pink_middle', row: 7, column: 1, width: 1, height: 1 },
+                { name: 'waterfall_pink_bottom', row: 8, column: 1, width: 1, height: 1 },
+
+                // Row 9 – Cat tiles
+                { name: 'cat_tile_red', row: 9, column: 0, width: 1, height: 1 },
+                { name: 'cat_tile_blue', row: 9, column: 1, width: 1, height: 1 },
+                { name: 'cat_tile_pink', row: 9, column: 2, width: 1, height: 1 },
+                { name: 'cat_tile_white', row: 9, column: 3, width: 1, height: 1 },
+                { name: 'cat_tile_purple', row: 9, column: 4, width: 1, height: 1 },
+                { name: 'cat_tile_yellow', row: 9, column: 5, width: 1, height: 1 }
+                ];
+
+            for (let row = 0; row < 16; row++) {
+                for (let col = 0; col < 16; col++) {
+                    tileStates.push({
+                        name: `tile_${row}_${col}`,
+                        row: row,
+                        column: col
+                    });
+                }
+            }
+
+            this.spriteAnimations = {};
+            this.currentAnimation = currentAnimation;
+
+            tileStates.forEach(state => {
+                this.spriteAnimations[state.name] = {
+                    x: state.column * this.width,
+                    y: state.row * this.height,
+                    width: state.width * this.width,
+                    height: state.height * this.height
+                };
+            });
         }
 
-        draw(ctx) {
-            ctx.drawImage(
+       draw(ctx) {
+        const frame = this.spriteAnimations[this.currentAnimation];
+
+        ctx.drawImage(
                 this.image,
-                this.tileX * this.width, this.tileY * this.height, this.width, this.height,
-                this.x, this.y, this.width, this.height
+                frame.x, frame.y, frame.width, frame.height,
+                this.x, this.y, frame.width, frame.height
             );
         }
     }
@@ -428,29 +503,19 @@ function resetLevel() {
     }
 
     const playerImage = new Image();
-    playerImage.src = '/sprites/character/knight.png';
+    playerImage.src = './sprites/character/knight.png';
     const backgroundImage = new Background(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+
+    const tilesetSrc = new Image();
+    tilesetSrc.src = './sprites/background/world_tileset.png'
 
     const input = new InputHandler();
     const player = new Player(CANVAS_WIDTH, CANVAS_HEIGHT);   
-    const tileMap = [
-        [ { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 } ],
-        [ { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 } ],
-        [ { x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 } ]
+    const tiles = [
+        new Tile(tilesetSrc, 50, 220, 'pipe_green'),
+        new Tile(tilesetSrc, 0, 220, 'pipe_yellow')
     ];
-
-    function drawTileMap(ctx, image, tileMap) {
-        for (let row = 0; row < tileMap.length; row++) {
-            for (let col = 0; col < tileMap[row].length; col++) {
-                const tile = tileMap[row][col];
-                const screenX = col * TILE_WIDTH;
-                const screenY = row * TILE_HEIGHT;
-                const t = new Tile(image, tile.x, tile.y, screenX, screenY);
-                t.draw(ctx);
-            }
-        }
-    }
-
 
 
     const plataforms = [
@@ -472,7 +537,9 @@ function resetLevel() {
     function animate() {
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             backgroundImage.draw(ctx);
-            
+            tiles.forEach(tile => {
+                tile.draw(ctx);
+            });
             player.draw(ctx, gameFrame);
 
             plataforms.forEach(plataform => {
