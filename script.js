@@ -518,6 +518,9 @@ function resetLevel() {
     ];
 
 
+    playerImage.onload = () => console.log('player loaded');
+    tilesetSrc.onload = () => console.log('tile Loaded')
+
     const plataforms = [
         new Plataform(0, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_green'),
         new Plataform(32, 300, CANVAS_WIDTH, CANVAS_HEIGHT, 'wide_blue'),
@@ -551,9 +554,5 @@ function resetLevel() {
         gameFrame++;
         requestAnimationFrame(animate);
     }
-    tilesetSrc.onload = () => {
-        playerImage.onload = () => {
-            animate();
-        }
-    }
+    animate();
 });
