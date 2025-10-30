@@ -163,7 +163,7 @@ window.addEventListener('load', function() {
         ctx.font = '20px Comic Sans MS';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('Você completou todos o Jogo', CANVAS_WIDTH / 2, 100);
+        ctx.fillText('Você completou o Jogo', CANVAS_WIDTH / 2, 100);
         ctx.fillText('Obrigado por jogar', CANVAS_WIDTH  / 2, 132);
 
         gameFrame++;
