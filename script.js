@@ -60,7 +60,6 @@ window.addEventListener('load', function() {
                 this.rollSpeed = -10;
             }
 
-            //sprite rendering
             this.columns = 8;
             this.staggerFrames = 10;
             this.spriteAnimations = {};

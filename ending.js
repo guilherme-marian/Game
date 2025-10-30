@@ -148,10 +148,10 @@ window.addEventListener('load', function() {
         const deltaTime = timeStamp - lastTime;
         lastTime = timeStamp
         const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-        gradient.addColorStop(0, '#0f0014ff'); // top: deep purple
-        gradient.addColorStop(0.33, '#750202ff'); // bottom: dark crimson
-        gradient.addColorStop(0.66, '#423049ff'); // top: deep purple
-        gradient.addColorStop(1, '#473e3eff'); // bottom: dark crimson
+        gradient.addColorStop(0, '#0f0014ff');
+        gradient.addColorStop(0.33, '#750202ff');
+        gradient.addColorStop(0.66, '#423049ff');
+        gradient.addColorStop(1, '#473e3eff');
 
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         ctx.fillStyle = gradient;
@@ -167,7 +167,8 @@ window.addEventListener('load', function() {
         ctx.fillText('Obrigado por jogar', CANVAS_WIDTH  / 2, 132);
 
         gameFrame++;
-        
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         requestAnimationFrame(animate);
     }
     playerImage.onload = () => {

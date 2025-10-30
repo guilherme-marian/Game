@@ -14,6 +14,11 @@
     transform: translate(-50%, -50%);
 }
 
+body {
+  background: linear-gradient(to bottom, #000000, #0a0a0a, #1a1a1a);
+  color: #e0e0e0;
+}
+
 h3 {
     font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     position: absolute;
@@ -28,7 +33,7 @@ h3 {
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
-  gap: 20px; /* spacing between <p> elements */
+  gap: 20px; 
   font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
