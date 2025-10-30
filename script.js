@@ -977,7 +977,7 @@ function resetLevel() {
     
     
 
-    let currentLevel = 3;
+    let currentLevel = 0;
     let background = levels[currentLevel].background;
     let tiles = levels[currentLevel].tiles;
     let plataforms = levels[currentLevel].plataforms;
