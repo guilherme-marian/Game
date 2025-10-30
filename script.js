@@ -384,7 +384,7 @@ function resetLevel() {
             let position = Math.floor(gameFrame / this.staggerFrames) % animation.loc.length;
             const frame = animation.loc[position];
             ctx.strokeStyle = 'black';
-            ctx.strokeRect(this.x, this.y - 32, frame.width, this.height);
+            //ctx.strokeRect(this.x, this.y - 32, frame.width, this.height);
 
             ctx.drawImage(
                 this.image,
