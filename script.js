@@ -1,4 +1,3 @@
-
 window.addEventListener('load', function() {
     const canvas = document.getElementById('canvas1');
     let currentAnimation = 'idle';
@@ -553,11 +552,13 @@ function resetLevel() {
 
 
     class Background {
-        constructor(gameWidth, gameHeight, image, clouds) {
+        constructor(gameWidth, gameHeight, image, clouds, extra, back) {
             this.gameWidth = gameWidth;
             this.gameHeight = gameHeight;
             this.image = image
             this.clouds = clouds
+            this.extra = extra 
+            this.back = back 
             this.x = 0;
             this.y = 0;
             this.width = 576;
@@ -567,6 +568,10 @@ function resetLevel() {
         draw(ctx) {
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
             ctx.drawImage(this.image, this.x + this.width - this.speed, this.y, this.width, this.height);
+            ctx.drawImage(this.extra, this.x, this.y, this.width, this.height);
+            ctx.drawImage(this.extra, this.x + this.width - this.speed , this.y, this.width, this.height);
+            ctx.drawImage(this.back, this.x, this.y, this.width, this.height);
+            ctx.drawImage(this.back, this.x + this.width - this.speed , this.y, this.width, this.height);
             ctx.drawImage(this.clouds, this.x, this.y, this.width, this.height);
             ctx.drawImage(this.clouds, this.x + this.width - this.speed , this.y, this.width, this.height);
         }
@@ -621,7 +626,9 @@ function resetLevel() {
         {
             background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
                 document.getElementById('backgroundBlue'),
-                document.getElementById('cloudsBlue')
+                document.getElementById('cloudsBlue'),
+                document.getElementById('extraBlue'),
+                document.getElementById('backBlue'),
             ),
             tiles: [
             new Tile(tilesetSrc, 98, 300, 'tall_water_blue'),
@@ -704,7 +711,9 @@ function resetLevel() {
         {
             background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
                 document.getElementById('backgroundYellow'),
-                document.getElementById('cloudsYellow')
+                document.getElementById('cloudsYellow'),
+                document.getElementById('extraYellow'),
+                document.getElementById('backYellow')
             ),
             tiles: [
             new Tile(tilesetSrc, 98, 300, 'tall_water_pink'),
@@ -809,7 +818,9 @@ function resetLevel() {
         {
             background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
                 document.getElementById('backgroundImage'),
-                document.getElementById('cloudsImage')
+                document.getElementById('cloudsImage'),
+                document.getElementById('extra'),
+                document.getElementById('back')
             ),
             tiles: [
 
@@ -889,7 +900,9 @@ function resetLevel() {
         {
             background: new Background(CANVAS_WIDTH, CANVAS_HEIGHT,
                 document.getElementById('backgroundNight'),
-                document.getElementById('cloudsNight')
+                document.getElementById('cloudsNight'),
+                document.getElementById('extraNight'),
+                document.getElementById('backNight')
             ),
             tiles: [
             new Tile(tilesetSrc, 98, 300, 'tall_water_grey'),
@@ -965,7 +978,7 @@ function resetLevel() {
     
     
 
-    let currentLevel = 0;
+    let currentLevel = 3;
     let background = levels[currentLevel].background;
     let tiles = levels[currentLevel].tiles;
     let plataforms = levels[currentLevel].plataforms;
